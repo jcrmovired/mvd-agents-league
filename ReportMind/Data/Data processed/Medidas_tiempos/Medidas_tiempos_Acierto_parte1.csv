@@ -1,0 +1,14 @@
+﻿Documento,Claude Sonnet,Llama4-Maverick,gpt-5-mini,gpt-4o,Mistal document ai,Llama3.2vision,Qwen2.5
+Formulario 1,0.9886363636363636,0.9659090909090909,,0.9829545454545454,0.9375,0.9488636363636364,0.9488636363636364
+Denuncia TIM 1,0.5921052631578947,0.881578947368421,0.8552631578947368,0.8947368421052632,0.34210526315789475,0.9868421052631579,0.8947368421052632
+Denuncia Policía 1,0.8787061994609164,0.9865229110512129,0.9784366576819407,0.9919137466307277,0.9649595687331537,0.9811320754716981,1
+Formulario 2,0.990632318501171,0.9882903981264637,0.9784366576819407,0.9836065573770492,0.9812646370023419,0.882903981264637,0.9929742388758782
+Denuncia Policía 2,0.9007782101167315,0.9902723735408561,0.9784366576819407,0.9980544747081712,0.08949416342412451,0.9688715953307393,0.9883268482490273
+Promedio (s),0.8701716709746155,0.9625147441992089,0.9168499077883387,0.9702532332551513,0.663064726463503,0.9537226787387736,0.9649803131187611
+,,"Nota: Este se puede conseguir en local, pero es pesado (245 GB mínimo, hay de hasta 803GB)",Nota: Da error de forma impredecible,,Nota: Funciona mejor con PDF que con PNGs,,
+AWS,,"Nota: Este se puede conseguir en local, pero es pesado (245 GB mínimo, hay de hasta 803GB)",Nota: Da error de forma impredecible,,,,
+Azure,,"Nota: Este se puede conseguir en local, pero es pesado (245 GB mínimo, hay de hasta 803GB)",Nota: Da error de forma impredecible,,,,
+Local,,"Nota: Este se puede conseguir en local, pero es pesado (245 GB mínimo, hay de hasta 803GB)",Nota: Da error de forma impredecible,,,,
+,,,,,,,
+,Claude Sonnet,Llama4-Maverick,gpt-5-mini,gpt-4o,Mistal document ai,Llama3.2vision,Qwen2.5
+Precio por 1 Millón de tockens,18,0.62,0.69,4.38,0.3,0,0
