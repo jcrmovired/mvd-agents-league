@@ -138,7 +138,7 @@ def partir_excel(nombre_excel):
 
                 df_parte.to_excel(ruta_salida, index=False)
 
-    print("✅ Proceso completado")
+    print("Proceso completado")
 
 
 # ---------------- MAIN ----------------
