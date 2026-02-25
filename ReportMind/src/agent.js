@@ -15,6 +15,23 @@ const client = new AzureOpenAI({
 
 const systemPrompt = "You are an AI agent that can chat with users.";
 
+const tools = [
+  {
+    type: "function",
+    function: {
+      name: "partirExcel",
+      description: "Procesa y divide un archivo Excel en CSVs. Úsala cuando el usuario quiera partir o procesar un archivo .xlsx",
+      parameters: {
+        type: "object",
+        properties: {
+          fileName: { type: "string", description: "Nombre del archivo Excel, ej: Book2.xlsx" }
+        },
+        required: ["fileName"]
+      }
+    }
+  }
+];
+
 // Historial de conversaciones por conversationId
 const conversationHistory = new Map();
 
@@ -55,51 +72,53 @@ function partirExcel(fileName) {
 }
 
 agentApp.onActivity(ActivityTypes.Message, async (context) => {
-  const userText = context.activity.text;
-
-  const match = userText.match(/([\w-]+\.xlsx)/i);
-
-  if (userText.toLowerCase().includes("parte") && match) {
-    const fileName = match[1];
-
-    await context.sendActivity(`Procesando el archivo ${fileName}...`);
-
-    try {
-      const result = await partirExcel(fileName);
-      await context.sendActivity(result.message);
-    } catch (err) {
-      await context.sendActivity(`❌ Error al procesar el archivo: ${err.message}`);
-    }
-
-    return;
-  }
-
   const conversationId = context.activity.conversation.id;
   const history = getHistory(conversationId);
 
-  // Añadir mensaje del usuario al historial
-  history.push({ role: "user", content: userText });
+  history.push({ role: "user", content: context.activity.text });
 
-  const result = await client.chat.completions.create({
-    messages: [
-      { role: "system", content: systemPrompt },
-      ...history,
-    ],
+  const response = await client.chat.completions.create({
+    messages: [{ role: "system", content: systemPrompt }, ...history],
+    tools,
+    tool_choice: "auto",
     model: "",
   });
 
-  let answer = "";
-  for (const choice of result.choices) {
-    answer += choice.message.content;
+  const message = response.choices[0].message;
+
+  if (message.tool_calls?.length > 0) {
+    history.push(message);
+
+    for (const toolCall of message.tool_calls) {
+      const { fileName } = JSON.parse(toolCall.function.arguments);
+      await context.sendActivity(`Procesando el archivo ${fileName}...`);
+
+      let toolResult;
+      try {
+        const result = await partirExcel(fileName);
+        toolResult = result.message;
+      } catch (err) {
+        toolResult = `Error: ${err.message}`;
+      }
+
+      history.push({ role: "tool", tool_call_id: toolCall.id, content: toolResult });
+    }
+
+    const finalResponse = await client.chat.completions.create({
+      messages: [{ role: "system", content: systemPrompt }, ...history],
+      model: "",
+    });
+
+    const answer = finalResponse.choices[0].message.content;
+    history.push({ role: "assistant", content: answer });
+    await context.sendActivity(answer);
+  } else {
+    const answer = message.content;
+    history.push({ role: "assistant", content: answer });
+    await context.sendActivity(answer);
   }
 
-  // Añadir respuesta del agente al historial
-  history.push({ role: "assistant", content: answer });
-
-  // Limitar historial a últimos 20 mensajes para no exceder tokens
   if (history.length > 20) history.splice(0, 2);
-
-  await context.sendActivity(answer);
 });
 
 module.exports = { agentApp };
