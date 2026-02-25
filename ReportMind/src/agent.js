@@ -76,10 +76,10 @@ function partirExcel(fileName) {
     process.stderr.on("data", (data) => error += data.toString());
 
     process.on("close", (code) => {
-      if (code === 0 || output.length > 0) {
-        resolve({ message: `Archivo ${fileName} procesado correctamente` });
+      if (code === 0) {
+        resolve({ message: `Archivo ${fileName} procesado correctamente. Output: ${output.trim()}` });
       } else {
-        reject(new Error(error || `Proceso terminó con código ${code}`));
+        reject(new Error(error || output || `Proceso terminó con código ${code}`));
       }
     });
   });

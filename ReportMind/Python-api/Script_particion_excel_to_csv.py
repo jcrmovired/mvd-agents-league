@@ -1,3 +1,4 @@
+import sys
 import uuid
 import pandas as pd
 import os
@@ -12,6 +13,7 @@ from langchain_core.documents import Document
 CSV = True
 MAX_ELEMS = 5000
 SEPARADOR = ","
+sys.stdout.reconfigure(encoding='utf-8')
 
 # Ruta fija a la carpeta de excels
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
