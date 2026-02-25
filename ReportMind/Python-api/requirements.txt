@@ -2,3 +2,8 @@ pandas
 openpyxl
 fastapi
 uvicorn
+python-dotenv
+langchain
+langchain-chroma
+langchain-core
+langchain-openai

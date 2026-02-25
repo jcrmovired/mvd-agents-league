@@ -29,6 +29,20 @@ const tools = [
         required: ["fileName"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "retrieveKnowledgeBase",
+      description: "Busca información en la knowledge base vectorial usando una consulta en lenguaje natural",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Texto de búsqueda semántica" }
+        },
+        required: ["query"]
+      }
+    }
   }
 ];
 
@@ -71,6 +85,27 @@ function partirExcel(fileName) {
   });
 }
 
+function retrieveKnowledgeBase(query) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "../Python-api/Retrieve_knowledgeBase.py");
+    const process = spawn("python", [scriptPath, query]);
+
+    let output = "";
+    let error = "";
+
+    process.stdout.on("data", (data) => output += data.toString());
+    process.stderr.on("data", (data) => error += data.toString());
+
+    process.on("close", (code) => {
+      if (code === 0 || output.length > 0) {
+        resolve({ message: output.trim() });
+      } else {
+        reject(new Error(error || `Proceso terminó con código ${code}`));
+      }
+    });
+  });
+}
+
 agentApp.onActivity(ActivityTypes.Message, async (context) => {
   const conversationId = context.activity.conversation.id;
   const history = getHistory(conversationId);
@@ -90,13 +125,23 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
     history.push(message);
 
     for (const toolCall of message.tool_calls) {
-      const { fileName } = JSON.parse(toolCall.function.arguments);
-      await context.sendActivity(`Procesando el archivo ${fileName}...`);
+      const args = JSON.parse(toolCall.function.arguments);
 
       let toolResult;
+
       try {
-        const result = await partirExcel(fileName);
+      if (toolCall.function.name === "partirExcel") {
+        await context.sendActivity(`Procesando el archivo ${args.fileName}...`);
+        const result = await partirExcel(args.fileName);
         toolResult = result.message;
+      }
+
+      if (toolCall.function.name === "retrieveKnowledgeBase") {
+        await context.sendActivity(`Buscando en la knowledge base...`);
+        const result = await retrieveKnowledgeBase(args.query);
+        toolResult = result.message;
+      }
+
       } catch (err) {
         toolResult = `Error: ${err.message}`;
       }
