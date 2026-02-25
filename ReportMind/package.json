@@ -9,8 +9,9 @@
     "license": "MIT",
     "main": "./src/index.js",
     "scripts": {
-        "dev:teamsfx": "env-cmd --silent -f .localConfigs npm run dev",
-        "dev:teamsfx:playground": "env-cmd --silent -f .localConfigs.playground npm run dev",
+        "install:python": "pip install -r Python-api/requirements.txt",
+        "dev:teamsfx": "npm run install:python && env-cmd --silent -f .localConfigs npm run dev",
+        "dev:teamsfx:playground": "npm run install:python && env-cmd --silent -f .localConfigs.playground npm run dev",
         "dev:teamsfx:launch-playground": "env-cmd --silent -f env/.env.playground agentsplayground start",
         "dev": "nodemon --inspect=9239 --signal SIGINT ./src/index.js",
         "start": "node ./src/index.js",

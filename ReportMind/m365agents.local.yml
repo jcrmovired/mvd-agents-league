@@ -78,6 +78,12 @@ provision:
       appId: M365_APP_ID
 
 deploy:
+  # Install Python dependencies
+  - uses: cli/runNpmCommand
+    name: install python dependencies
+    with:
+      args: run install:python
+
   # Run npm command
   - uses: cli/runNpmCommand
     name: install dependencies

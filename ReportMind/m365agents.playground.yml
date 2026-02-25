@@ -16,6 +16,11 @@ deploy:
     with:
       args: install --no-audit
 
+  # Install Python dependencies
+  - uses: cli/runNpmCommand
+    with:
+      args: run install:python
+
   # Generate runtime environment variables
   - uses: file/createOrUpdateEnvironmentFile
     with:
