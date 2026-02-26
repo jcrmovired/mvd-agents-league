@@ -43,9 +43,17 @@ Meet **ReportMind** — the AI agent that doesn’t ruin your Fridays 🎉.
 
 Ask *"What was the loss ratio for the automotive business unit in Q3?"* and ReportMind will find the answer in your real data, explain it, and visualize it 📈 — all in a single conversation turn.
 
+---
+
 ## Inspiration
 
-One of the biggest unsolved challenges in enterprise AI today is **tabular data**. LLMs are great at text — but when the source of truth lives in Excel spreadsheets, CSV exports, or business reports, most agents fail. They either hallucinate numbers, can't navigate multi-sheet files, or require expensive data pipelines before they can answer a single question.
+One of the biggest unsolved challenges in enterprise AI today is **tabular data**. LLMs are great at text — but when the source of truth lives in Excel spreadsheets, CSV exports, or business reports, most agents fail. They either hallucinate numbers, cannot navigate multi-sheet files, or require expensive data pipelines before they can answer a single question.
+
+In practice, Excel files are the Achilles’ heel of modern generative AI. Every attempt to analyze them introduces a new obstacle: files are too large, sheets are too complex, rows and columns are too numerous, or the relevant information is hidden somewhere else. The list of issues when working with LLMs on spreadsheets is almost endless. That is why we built this project — to propose a practical solution to this problem.
+
+We present a prototype designed specifically for working with Excel files, where file size is no longer a limitation thanks to our preprocessing and chunking strategy. In addition, our approach improves the understanding of tabular data regardless of the original spreadsheet structure by transforming implicit context into explicit, semantically meaningful text, which substantially enhances retrieval performance. Finally, we extended the agent with chart generation and document memory capabilities to provide a more natural and productive user experience.
+
+Although this is still an early-stage version, we believe our approach can help push the boundaries of how LLMs understand Excel data and significantly simplify everyday analytical workflows in enterprise environments.
 
 ---
 
