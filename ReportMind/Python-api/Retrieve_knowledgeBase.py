@@ -35,18 +35,26 @@ def retrieve_top_k(query: str, k: int = 10):
 
     results = db.similarity_search(query, k=k)
 
-    print(f"\n🔎 Query: {query}")
-    print(f"📊 Top {k} resultados:\n")
+    output = []
+    output.append(f"top {k} resultados:\n")
+    # print(f"\nQuery: {query}")
+    # print(f"Top {k} resultados:\n")
 
     for i, doc in enumerate(results, 1):
-        print(f"RESULTADO {i}")
-        print("📄 Source:", doc.metadata.get("source"))
-        print("🧠 Contenido:")
-        print(doc.page_content[:500])  # mostramos solo un preview
-        print("-" * 60)
+        # print(f"RESULTADO {i}")
+        # print("Source:", doc.metadata.get("source"))
+        # print("Contenido:")
+        # print(doc.page_content[:1000])  # mostramos solo un preview
+        # print("-" * 60)
+        output.append(f"RESULTADO {i}")
+        output.append(f"Source: {doc.metadata.get('source')}")
+        output.append("Contenido:")
+        output.append(doc.page_content)
+        output.append("-" * 60)
 
+    return "\n".join(output)
 
-# 🏁 MAIN
+# MAIN
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Buscar en la Knowledge Base (Top-K vectores)"
@@ -67,4 +75,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    retrieve_top_k(args.query, args.k)
+    output = retrieve_top_k(args.query, args.k)
+    print(output)
