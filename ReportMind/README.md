@@ -3,33 +3,31 @@
 > 🏆 **Microsoft Agents League — Enterprise Agents Track Submission**
 > Built by team **MV Dataworks** for the [Enterprise Agents competition](https://github.com/microsoft/agentsleague/tree/main/starter-kits/3-enterprise-agents)
 
-One of the biggest unsolved challenges in enterprise AI today is **tabular data**. LLMs are great at text — but when the source of truth lives in Excel spreadsheets, CSV exports, or business reports, most agents fail. They either hallucinate numbers, can't navigate multi-sheet files, or require expensive data pipelines before they can answer a single question.
-
-(It’s Friday. Two hours left before you’re free. Your brain is already planning tomorrow’s breakfast — croissant or toast with tomato — when suddenly… *ping*.
+It’s Friday. Two hours left before you’re free ⏳. Your brain is already planning tomorrow’s breakfast — croissant or toast with tomato 🥐🍅 — when suddenly… *ping* 🔔
 
 An Excel file lands in your inbox.
 
-Ten sheets. Ten thousand cells each. Random colors. Formulas pointing to places that no longer exist.  
-The message says: *“Can you check a few parameters? We can’t find them.”*
+Ten sheets. Ten thousand cells each. Random colors 🎨. Formulas pointing to places that no longer exist 🧭.  
+The message says: *“Can you check a few parameters? We can’t find them.”* 😐
 
-You sigh, open your wallet, and subscribe to yet another “revolutionary” tool that promises to *read tabular data*, *talk to your Excel*, and *change the way you work*.  
-€30/month later, and 15 minutes after that… it’s your **53rd disappointment**.
+You sigh 😮‍💨, open your wallet, and subscribe to yet another “revolutionary” tool that promises to *read tabular data*, *talk to your Excel*, and *change the way you work* 🚀.  
+€30/month later, and 15 minutes after that… it’s your **53rd disappointment** 💸.
 
-Has it ever happened to you?
+Has this ever happened to you?
 
-Yeah. Us too.
+Yeah. Us too 🤝.
 
 So we built this agent.
 
-One that actually opens the file.  
-Actually understands the data.  
-And actually answers your questions — without forcing you to become an archaeologist of cells.
+One that actually opens the file 📂.  
+Actually understands the data 🧠.  
+And actually answers your questions — without forcing you to become an archaeologist of cells 🏺.
 
-Welcome to Excel analysis that doesn’t ruin your Fridays.)
+Meet **ReportMind** — the AI agent that doesn’t ruin your Fridays 🎉.
 
-**ReportMind solves this.** It ingests real Excel reports, splits them by sheet into structured CSV datasets, embeds them into a vector knowledge base, and lets users ask questions in plain language — getting back accurate, grounded answers with no SQL, no dashboards, and no data engineering required.
+**ReportMind** ingests real Excel reports, splits them by sheet into structured CSV datasets, embeds them into a vector knowledge base, and lets you ask questions in plain language — getting back accurate, grounded answers with no SQL, no dashboards, and no data engineering required ⚡.
 
-(What do we propose?
+### ✨ What we bring to the table
 
 - 📊 Reads large, messy Excel files without complaining  
 - 🔍 Finds the KPIs people swear are “somewhere in there”  
@@ -37,12 +35,17 @@ Welcome to Excel analysis that doesn’t ruin your Fridays.)
 - 💬 Lets you ask questions in plain language  
 - ⚡ Saves you from manual scrolling-induced despair  
 
-## 🧘‍♂️ What this agent does *not* do
+### 🧘‍♂️ What this agent does *not* do
 
-- Judge your spreadsheet structure  
+- Judge your spreadsheet structure 🙃  
 - Ask why there are merged cells inside pivot tables  
-- Tell anyone how long it actually took you to find that number  
-Ask *"What was the loss ratio for the automotive business unit in Q3?"* and ReportMind will find the answer in your actual data, explain it, and visualize it — all in a single conversation turn.)
+- Tell anyone how long it actually took you to find that number 🤫  
+
+Ask *"What was the loss ratio for the automotive business unit in Q3?"* and ReportMind will find the answer in your real data, explain it, and visualize it 📈 — all in a single conversation turn.
+
+## Inspiration
+
+One of the biggest unsolved challenges in enterprise AI today is **tabular data**. LLMs are great at text — but when the source of truth lives in Excel spreadsheets, CSV exports, or business reports, most agents fail. They either hallucinate numbers, can't navigate multi-sheet files, or require expensive data pipelines before they can answer a single question.
 
 ---
 
