@@ -37,15 +37,8 @@ def retrieve_top_k(query: str, k: int = 10):
 
     output = []
     output.append(f"top {k} resultados:\n")
-    # print(f"\nQuery: {query}")
-    # print(f"Top {k} resultados:\n")
 
     for i, doc in enumerate(results, 1):
-        # print(f"RESULTADO {i}")
-        # print("Source:", doc.metadata.get("source"))
-        # print("Contenido:")
-        # print(doc.page_content[:1000])  # mostramos solo un preview
-        # print("-" * 60)
         output.append(f"RESULTADO {i}")
         output.append(f"Source: {doc.metadata.get('source')}")
         output.append("Contenido:")

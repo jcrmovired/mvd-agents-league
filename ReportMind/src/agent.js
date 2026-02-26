@@ -63,6 +63,12 @@ KNOWLEDGE BASE:
 - When asked for ratios, present them as percentages with 2 decimals, ej: 12.34%.
 - when asked for economic values, present them with a euro sign and commas, ej: €1,234,567.89.
 
+CHART GENERATION:
+- You can create visualizations using the "createChart" tool.
+- Use charts to help users understand data trends, comparisons, and distributions.
+- Suggest appropriate chart types: bar for comparisons, line for trends, pie for proportions, scatter for correlations, histogram for distributions.
+- Always provide meaningful titles and axis labels.
+
 WHEN TO USE THE KNOWLEDGE BASE:
 You MUST call the retriever when the question involves:
 - insurance performance
@@ -77,6 +83,7 @@ AFTER RECEIVING KNOWLEDGE BASE CONTENT:
 - Treat it as the source of truth.
 - Extract only the relevant values.
 - Perform comparisons or trend analysis when requested.
+- Consider creating charts to visualize the data when appropriate.
 - If the data is incomplete or missing, say:
   "I couldn't find that information in the knowledge base."
 - Do NOT hallucinate or fill gaps.
@@ -110,6 +117,7 @@ Be accurate, analytical and fully grounded in the provided data.
 // These enable function calling for:
 // - Tabular data ingestion (Excel → CSV pipeline)
 // - Semantic retrieval from the vector knowledge base
+// - Chart generation using matplotlib
 const tools = [
   {
     type: "function",
@@ -136,6 +144,51 @@ const tools = [
           query: { type: "string", description: "Semantic search text" }
         },
         required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "createChart",
+      description: "Creates charts and visualizations from data using matplotlib. Use when user asks for graphs, charts, or visualizations.",
+      parameters: {
+        type: "object",
+        properties: {
+          type: {
+            type: "string",
+            enum: ["line", "bar", "scatter", "histogram", "pie"],
+            description: "Type of chart"
+          },
+          title: { type: "string", description: "Chart title" },
+          xAxis: {
+            type: "object",
+            description: "X axis config",
+            properties: {
+              label: { type: "string" },
+              categories: { type: "array", items: { type: "string" } }
+            }
+          },
+          yAxis: {
+            type: "object",
+            description: "Y axis config",
+            properties: {
+              label: { type: "string" }
+            }
+          },
+          series: {
+            type: "array",
+            description: "Data series",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                data: { type: "array", items: { type: "number" } }
+              }
+            }
+          }
+        },
+        required: ["type", "series"]
       }
     }
   }
@@ -415,7 +468,71 @@ function retrieveKnowledgeBase(query) {
   });
 }
 
-// LLM-powered conversation compression.
+// Creates charts using the MCP matplotlib server.
+// Bridges the Node agent with the Python matplotlib MCP.
+function createChart(chartArgs) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "../Python-api/mcp_matplotlib.py");
+    const process = spawn("python", [scriptPath]);
+
+    let output = "";
+    let error = "";
+
+    // Send MCP request to the matplotlib server
+    const mcpRequest = {
+      method: "tools/call",
+      params: {
+        name: "create_chart",
+        arguments: chartArgs
+      }
+    };
+
+    process.stdin.write(JSON.stringify(mcpRequest) + "\n");
+    process.stdin.end();
+
+    process.stdout.on("data", (data) => {
+      output += data.toString();
+    });
+
+    process.stderr.on("data", (data) => {
+      error += data.toString();
+    });
+
+    process.on("close", (code) => {
+      console.log("MCP exit code:", code);
+      console.log("MCP stdout:", output.trim().substring(0, 300));
+      console.log("MCP stderr:", error.trim().substring(0, 300));
+      try {
+        if (output.trim()) {
+          const result = JSON.parse(output.trim());
+          if (result.content && result.content[0]) {
+            resolve({ message: result.content[0].text, imageData: result.content[1]?.data });
+          } else {
+            resolve({ message: "Chart created successfully" });
+          }
+        } else {
+          reject(new Error(error || `Process finished with code ${code}`));
+        }
+      } catch (err) {
+        reject(new Error(`Failed to parse MCP response: ${err.message}. Raw output: ${output.trim().substring(0, 200)}`));
+      }
+    });
+  });
+}
+
+// Removes prompt injection / spam patterns from any text before sending to chat or memory
+function sanitizeText(text) {
+  if (!text) return text;
+  // Remove lines containing Chinese chars, spam patterns, or tool injection attempts
+  return text
+    .split('\n')
+    .filter(line => !/[\u4e00-\u9fff\u0e00-\u0e7f]/.test(line))
+    .filter(line => !/to=functions\.|commentary|json\s*$|天天|彩票|快三|赛车/i.test(line))
+    .join('\n')
+    .trim();
+}
+
+
 // Converts the full recent interaction window into a compact semantic summary.
 // This summary is injected as system context in subsequent turns.
 async function summarizeConversation(memory) {
@@ -558,13 +675,43 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
   });
 
   const message = response.choices[0].message;
+  console.log("LLM finish_reason:", response.choices[0].finish_reason, "| tool_calls:", message.tool_calls?.length ?? 0);
+
+  // Detect when model returns tool call as plain text instead of tool_calls
+  if (!message.tool_calls?.length && message.content) {
+    let parsed = null;
+    try { parsed = JSON.parse(message.content.trim()); } catch (_) {}
+    if (parsed && (parsed.series || parsed.xAxis || parsed.chartType || parsed.chart_type)) {
+      // Model returned chart JSON as text — execute it manually
+      const fakeArgs = parsed;
+      await context.sendActivity(`Creating chart: ${fakeArgs.title || ''}...`);
+      try {
+        const result = await createChart(fakeArgs);
+        if (result.imageData) {
+          const filesDir = path.join(__dirname, "../files");
+          if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir, { recursive: true });
+          const chartFileName = `chart_${Date.now()}.png`;
+          fs.writeFileSync(path.join(filesDir, chartFileName), Buffer.from(result.imageData, 'base64'));
+          const port = process.env.PORT || 3978;
+          await context.sendActivity(`![${fakeArgs.title || 'Chart'}](http://localhost:${port}/charts/${chartFileName})`);
+        } else {
+          await context.sendActivity(result.message || "Chart created.");
+        }
+      } catch (err) {
+        await context.sendActivity(`Error creating chart: ${err.message}`);
+      }
+      memory.messages.push({ role: "assistant", content: `Chart created: ${fakeArgs.title || ""}` });
+      return;
+    }
+  }
 
   // Store the tool call request as part of the reasoning trace.
   // This keeps the conversation coherent for multi-step tool usage.
   if (message.tool_calls?.length > 0) {
     memory.messages.push({
       role: "assistant",
-      tool_calls: message.tool_calls
+      tool_calls: message.tool_calls,
+      content: message.content || null
     });
 
     // Execute each requested tool and capture its output.
@@ -585,12 +732,36 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
       if (toolCall.function.name === "retrieveKnowledgeBase") {
         await context.sendActivity(`Searching in the knowledge base...`);
         const result = await retrieveKnowledgeBase(args.query);
-        toolResult = result.message;
+        toolResult = sanitizeText(result.message);
+      }
+
+      if (toolCall.function.name === "createChart") {
+        await context.sendActivity(`Creating chart: ${args.title || args.chartType || args.chart_type}...`);
+        const result = await createChart(args);
+        toolResult = result.message || "Chart created.";
+
+        if (result.imageData) {
+          await context.sendActivity({
+            type: 'message',
+            attachments: [{
+              contentType: 'image/png',
+              contentUrl: `data:image/png;base64,${result.imageData}`,
+              name: `chart_${Date.now()}.png`
+            }]
+          });
+
+          memory.messages.push({ role: "tool", tool_call_id: toolCall.id, content: "Chart created and displayed." });
+          memory.messages.push({ role: "assistant", content: `Here is the chart: ${args.title || ""}` });
+          return;
+        }
       }
 
       } catch (err) {
         toolResult = `Error: ${err.message}`;
+        console.log("TOOL ERROR:", toolCall.function.name, err.message);
       }
+
+      console.log("TOOL RESULT for", toolCall.function.name, ":", String(toolResult).substring(0, 200));
       
       // Tool output becomes the single source of truth for the next model call.
       // This is the core of the RAG grounding mechanism.
@@ -624,15 +795,11 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
       model: config.azureOpenAIDeploymentName,
     });
 
-    const answer = finalResponse.choices[0].message.content;
-    // Persist the assistant response in the short-term memory
-    // so follow-up questions can reference it.
+    const answer = sanitizeText(finalResponse.choices[0].message.content);
     memory.messages.push({ role: "assistant", content: answer });
     await context.sendActivity(answer);
   } else {
-    const answer = message.content;
-    // Persist the assistant response in the short-term memory
-    // so follow-up questions can reference it.
+    const answer = sanitizeText(message.content);
     memory.messages.push({ role: "assistant", content: answer });
     await context.sendActivity(answer);
   }

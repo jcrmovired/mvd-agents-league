@@ -7,3 +7,5 @@ langchain
 langchain-chroma
 langchain-core
 langchain-openai
+matplotlib
+seaborn
