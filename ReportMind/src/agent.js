@@ -1,10 +1,28 @@
+// ============================
+// DEPENDENCIES
+// ============================
+// Agent SDK → conversation handling
+// Azure OpenAI → LLM orchestration
+// child_process → Python tool execution
+// fs/path → local file persistence
+// http/https → attachment download
+// querystring → OAuth token request encoding
+
 const { ActivityTypes } = require("@microsoft/agents-activity");
 const { AgentApplication, MemoryStorage } = require("@microsoft/agents-hosting");
 const { AzureOpenAI } = require("openai");
 const { spawn } = require("child_process");
 const path = require("path");
-
+const fs = require("fs");
+const https = require("https");
+const http = require("http");
+const querystring = require("querystring");
 const config = require("./config");
+
+// Azure OpenAI client used for:
+// 1) Tool decision phase
+// 2) Final grounded response generation
+// 3) Conversation summarization
 
 const client = new AzureOpenAI({
   apiVersion: "2024-12-01-preview",
@@ -13,6 +31,10 @@ const client = new AzureOpenAI({
   deployment: config.azureOpenAIDeploymentName,
 });
 
+// In-memory cache for Bot Framework access token.
+// Avoids requesting a new token on every attachment download.
+let cachedBotToken = null;
+let cachedBotTokenExpiresAt = 0;
 
 // ============================
 // AGENT CONFIGURATION
@@ -60,7 +82,7 @@ AFTER RECEIVING KNOWLEDGE BASE CONTENT:
 - Do NOT hallucinate or fill gaps.
 
 EXCEL PROCESSING:
-- When the user wants to process, split, ingest or learn from an Excel file, call the tool "partirExcel".
+- When the user wants to process, split, ingest or learn from an Excel file, call the tool "splitExcel".
 - Do not explain manual steps if the tool exists.
 
 RESPONSE STYLE:
@@ -126,6 +148,15 @@ const tools = [
 // This allows long conversations without exceeding token limits.
 const conversationHistory = new Map();
 
+// Tracks processed datasets per conversation.
+// Enables the agent to understand which files are available
+// and which one is currently active.
+const conversationFiles = new Map();
+
+// ============================
+// AUXILIAR FUNCTIONS
+// ============================
+
 // Ensures every conversation has an isolated memory container.
 // Memory is created lazily on first user interaction.
 function getHistory(conversationId) {
@@ -137,6 +168,27 @@ function getHistory(conversationId) {
   }
   return conversationHistory.get(conversationId);
 }
+
+function getFiles(conversationId) {
+  if (!conversationFiles.has(conversationId)) {
+    conversationFiles.set(conversationId, []);
+  }
+  return conversationFiles.get(conversationId);
+}
+
+// Registers a processed Excel file in the conversation scope.
+// The extension is removed so the base name matches the generated CSV dataset.
+function addFile(conversationId, fileName) {
+  const files = getFiles(conversationId);
+  const fileBase = fileName.replace(/\.xlsx$/i, '');
+  if (!files.includes(fileBase)) {
+    files.push(fileBase);
+  }
+}
+
+// ============================
+// TOOLS & MEMORY MANAGEMENT
+// ============================
 
 // SDK storage (currently not used for persistence).
 // Can be upgraded later to store conversation memory across restarts.
@@ -167,6 +219,161 @@ function splitExcel(fileName) {
         reject(new Error(error || output || `Process finished with code ${code}`));
       }
     });
+  });
+}
+
+// Executes analytical queries over a processed CSV dataset.
+// The query type and parameters are resolved in Python.
+function ReadCSV(fileName, consultaTipo, parametros = {}) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, "../Python-api/consultar_datos.py");
+    const args = [scriptPath, fileName, consultaTipo];
+    
+    if (parametros.columna) args.push("--columna", parametros.columna);
+    if (parametros.n) args.push("--n", parametros.n.toString());
+    
+    const process = spawn("python", args);
+
+    let output = "";
+    let error = "";
+
+    process.stdout.on("data", (data) => output += data.toString());
+    process.stderr.on("data", (data) => error += data.toString());
+
+    process.on("close", (code) => {
+      try {
+        const resultado = JSON.parse(output);
+        if (resultado.error) {
+          reject(new Error(resultado.error));
+        } else {
+          resolve(resultado);
+        }
+      } catch (err) {
+        reject(new Error(error || output || `Proceso terminó con código ${code}`));
+      }
+    });
+  });
+}
+
+// Downloads an attachment from Teams/Bot Framework.
+// Flow:
+// 1) Try anonymous download
+// 2) If unauthorized → request Bot Framework token
+// 3) Retry with Bearer token
+async function downloadFile(contentUrl, fileName) {
+  return new Promise((resolve, reject) => {
+    const dataRawPath = path.join(__dirname, "../Data/Data raw");
+    
+    // Crear directorio si no existe
+    if (!fs.existsSync(dataRawPath)) {
+      fs.mkdirSync(dataRawPath, { recursive: true });
+    }
+
+    const filePath = path.join(dataRawPath, fileName);
+
+    const downloadOnce = (headers) => new Promise((resolveDownload, rejectDownload) => {
+      const fileStream = fs.createWriteStream(filePath);
+      const url = new URL(contentUrl);
+      const protocol = url.protocol === "https:" ? https : http;
+
+      const request = protocol.get(contentUrl, { headers }, (res) => {
+        if (res.statusCode !== 200) {
+          fileStream.close();
+          fs.unlink(filePath, () => {});
+          const error = new Error(`HTTP error! status: ${res.statusCode}`);
+          error.statusCode = res.statusCode;
+          rejectDownload(error);
+          return;
+        }
+        res.pipe(fileStream);
+      });
+
+      request.on("error", (err) => {
+        fileStream.close();
+        fs.unlink(filePath, () => {});
+        rejectDownload(err);
+      });
+
+      fileStream.on("finish", () => {
+        fileStream.close();
+        resolveDownload(filePath);
+      }).on("error", (err) => {
+        fs.unlink(filePath, () => {});
+        rejectDownload(err);
+      });
+    });
+
+    const tryDownload = async () => {
+      try {
+        return await downloadOnce({});
+      } catch (err) {
+        if (err.statusCode === 401 || err.statusCode === 403) {
+          const token = await getBotFrameworkToken();
+          if (token) {
+            return await downloadOnce({ Authorization: `Bearer ${token}` });
+          }
+        }
+        throw err;
+      }
+    };
+
+    tryDownload().then(resolve).catch(reject);
+  });
+}
+
+// Requests an access token using client credentials flow.
+// Token is cached until shortly before expiration.
+async function getBotFrameworkToken() {
+  const now = Date.now();
+  if (cachedBotToken && cachedBotTokenExpiresAt > now + 60000) {
+    return cachedBotToken;
+  }
+
+  const clientId = process.env.clientId;
+  const clientSecret = process.env.clientSecret;
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  const postData = querystring.stringify({
+    grant_type: "client_credentials",
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "https://api.botframework.com/.default",
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(postData),
+        },
+      },
+      (res) => {
+        let body = "";
+        res.on("data", (chunk) => body += chunk.toString());
+        res.on("end", () => {
+          if (res.statusCode !== 200) {
+            return reject(new Error(`Token error! status: ${res.statusCode}`));
+          }
+          try {
+            const payload = JSON.parse(body);
+            cachedBotToken = payload.access_token;
+            cachedBotTokenExpiresAt = Date.now() + (payload.expires_in * 1000);
+            resolve(cachedBotToken);
+          } catch (err) {
+            reject(err);
+          }
+        });
+      }
+    );
+
+    req.on("error", reject);
+    req.write(postData);
+    req.end();
   });
 }
 
@@ -213,8 +420,12 @@ function retrieveKnowledgeBase(query) {
 // This summary is injected as system context in subsequent turns.
 async function summarizeConversation(memory) {
   const text = memory.messages
-    .map(m => `${m.role}: ${m.content}`)
-    .join("\n");
+  .map(m => {
+    if (m.content) return `${m.role}: ${m.content}`;
+    if (m.tool_calls) return `${m.role}: [tool call]`;
+    return `${m.role}:`;
+  })
+  .join("\n");
 
   const response = await client.chat.completions.create({
     model: config.azureOpenAIDeploymentName,
@@ -231,16 +442,96 @@ async function summarizeConversation(memory) {
   memory.summary = response.choices[0].message.content;
 }
 
+
+// ============================
+// AGENT EXCECUTION
+// ============================
+
+// Main agent orchestration loop.
+// Responsibilities:
+// 1) Attachment ingestion
+// 2) Memory update
+// 3) Tool decision phase
+// 4) Tool execution
+// 5) Final grounded response
+// 6) Context compression
+
 agentApp.onActivity(ActivityTypes.Message, async (context) => {
   const conversationId = context.activity.conversation.id;
   const memory = getHistory(conversationId);
+  const userText = context.activity.text || "";
+
+  // ============================
+  // ATTACHMENT AUTO-PROCESSING
+  // ============================
+
+  // Automatic Excel ingestion flow.
+  // If a file is uploaded:
+  // - Download if not already stored
+  // - Process into CSV datasets
+  // - Register as active dataset for the conversation
+
+  if (context.activity.attachments && context.activity.attachments.length > 0) {
+    const attachment = context.activity.attachments[0];
+    const fileName = attachment.name;
+
+    const downloadUrl =
+      (attachment.content && attachment.content.downloadUrl) ||
+      attachment.contentUrl;
+
+    if (fileName && fileName.match(/\.xlsx$/i)) {
+      await context.sendActivity(`📎 File received: ${fileName}. Processing...`);
+
+      try {
+        const filePath = path.join(__dirname, "../Data/Data raw", fileName);
+
+        if (!fs.existsSync(filePath)) {
+          if (!downloadUrl) {
+            throw new Error("No download URL found for the attachment.");
+          }
+
+          await downloadFile(downloadUrl, fileName);
+        }
+
+        const result = await splitExcel(fileName);
+
+        await context.sendActivity(result.message);
+
+        // Save file in conversation memory
+        memory.lastProcessedFile = fileName.replace(/\.xlsx$/i, "");
+        addFile(conversationId, fileName);
+
+        // If user sent only the file → stop here
+        if (!userText.trim()) {
+          return;
+        }
+
+        // If there is text → continue normal agent flow
+
+      } catch (err) {
+        await context.sendActivity(`❌ Error processing file: ${err.message}`);
+        return;
+      }
+    }
+  }
 
   // Store the raw user message as part of the conversational working memory.
   // This is the freshest and most relevant context for the model.
   memory.messages.push({
     role: "user",
-    content: context.activity.text
+    content: userText
   });
+
+  // Injects the currently active dataset into the system context.
+  // Enables follow-up analytical questions without repeating the file name.
+
+  const fileContext = memory.lastProcessedFile
+    ? [{
+        role: "system",
+        content: `Last processed file: ${memory.lastProcessedFile}.
+      Use this file as the default data source for follow-up analytical questions unless the user specifies a different file.`
+      }]
+    : [];
 
   // Compose the full prompt for the LLM.
   // Order is important:
@@ -252,6 +543,7 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
     ...(memory.summary
       ? [{ role: "system", content: `Conversation summary:\n${memory.summary}` }]
       : []),
+    ...fileContext,
     ...memory.messages
   ];
 
@@ -316,11 +608,17 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
       ...(memory.summary
         ? [{ role: "system", content: `Conversation summary:\n${memory.summary}` }]
         : []),
+      ...fileContext,
       ...memory.messages
     ];
 
     // Second LLM call:
-    // Generates the final response using tool outputs as context.
+    // Grounded response generation.
+    // The model answers using:
+    // - Tool outputs
+    // - Conversation memory
+    // - Active dataset context
+    
     const finalResponse = await client.chat.completions.create({
       messages: messagesForFinalModel,
       model: config.azureOpenAIDeploymentName,
