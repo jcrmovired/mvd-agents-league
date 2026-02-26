@@ -1,4 +1,4 @@
-# ReportMind 📊
+# <img src="logo_report_mind.png" alt="ReportMind" height="80" style="vertical-align:middle"/> ReportMind
 
 > 🏆 **Microsoft Agents League — Enterprise Agents Track Submission**
 > Built by team **MV Dataworks** for the [Enterprise Agents competition](https://github.com/microsoft/agentsleague/tree/main/starter-kits/3-enterprise-agents)
@@ -161,6 +161,15 @@ SECRET_AZURE_OPENAI_API_KEY=<your-key>
 AZURE_OPENAI_ENDPOINT=<your-endpoint>
 AZURE_OPENAI_DEPLOYMENT_NAME=<your-gpt-deployment>
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME=<your-embedding-deployment>
+```
+
+For local Teams testing, also create `env/.env.local.user`:
+
+```
+SECRET_BOT_PASSWORD=<your-bot-password>
+SECRET_AZURE_OPENAI_API_KEY=<your-key>
+AZURE_OPENAI_ENDPOINT=<your-endpoint>
+AZURE_OPENAI_DEPLOYMENT_NAME=<your-gpt-deployment>
 ```
 
 ### 2. Install dependencies
