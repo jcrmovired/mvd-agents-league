@@ -16,7 +16,13 @@ def consultar_csv(nombre_archivo, consulta_tipo, parametros=None):
     ruta_csv = os.path.join(DATA_PROCESSED_PATH, nombre_archivo)
 
     if not os.path.exists(ruta_csv):
-        raise FileNotFoundError(f"CSV file not found: {ruta_csv}")
+        # Search recursively in subdirectories
+        for root, dirs, files in os.walk(DATA_PROCESSED_PATH):
+            if nombre_archivo in files:
+                ruta_csv = os.path.join(root, nombre_archivo)
+                break
+        else:
+            raise FileNotFoundError(f"CSV file not found: {ruta_csv}")
 
     df = pd.read_csv(ruta_csv)
 

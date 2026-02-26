@@ -191,6 +191,27 @@ const tools = [
         required: ["type", "series"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "readCSV",
+      description: "Runs a query over a processed CSV file. Use for count, statistics, top rows, sums or samples of a specific dataset.",
+      parameters: {
+        type: "object",
+        properties: {
+          fileName: { type: "string", description: "CSV file name with extension, e.g. Book2_Sheet1.csv" },
+          queryType: {
+            type: "string",
+            enum: ["count", "describe", "head", "top", "sum", "sample"],
+            description: "Type of query to run"
+          },
+          column: { type: "string", description: "Column name (required for top and sum)" },
+          n: { type: "integer", description: "Number of rows (for head, top, sample)" }
+        },
+        required: ["fileName", "queryType"]
+      }
+    }
   }
 ];
 
@@ -279,7 +300,7 @@ function splitExcel(fileName) {
 // The query type and parameters are resolved in Python.
 function ReadCSV(fileName, consultaTipo, parametros = {}) {
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(__dirname, "../Python-api/consultar_datos.py");
+    const scriptPath = path.join(__dirname, "../Python-api/Read_CSV.py");
     const args = [scriptPath, fileName, consultaTipo];
     
     if (parametros.columna) args.push("--columna", parametros.columna);
@@ -735,6 +756,12 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
         toolResult = sanitizeText(result.message);
       }
 
+      if (toolCall.function.name === "readCSV") {
+        await context.sendActivity(`Reading CSV data...`);
+        const result = await ReadCSV(args.fileName, args.queryType, { columna: args.column, n: args.n });
+        toolResult = JSON.stringify(result);
+      }
+
       if (toolCall.function.name === "createChart") {
         await context.sendActivity(`Creating chart: ${args.title || args.chartType || args.chart_type}...`);
         const result = await createChart(args);
@@ -763,12 +790,10 @@ agentApp.onActivity(ActivityTypes.Message, async (context) => {
 
       console.log("TOOL RESULT for", toolCall.function.name, ":", String(toolResult).substring(0, 200));
       
-      // Tool output becomes the single source of truth for the next model call.
-      // This is the core of the RAG grounding mechanism.
       memory.messages.push({
         role: "tool",
         tool_call_id: toolCall.id,
-        content: toolResult
+        content: toolResult ?? "Done."
       });
     }
 

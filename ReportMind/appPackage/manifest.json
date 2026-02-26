@@ -48,8 +48,20 @@
                     ],
                     "commands": [
                         {
-                            "title": "How can you help me?",
-                            "description": "How can you help me?"
+                            "title": "What are the main KPIs?",
+                            "description": "Show me the top KPIs from the latest report"
+                        },
+                        {
+                            "title": "Loss ratio trend",
+                            "description": "Show me the loss ratio trend across all months"
+                        },
+                        {
+                            "title": "Chart by business unit",
+                            "description": "Create a bar chart comparing claims by business unit"
+                        },
+                        {
+                            "title": "Upload a report",
+                            "description": "Upload an Excel report to analyze it"
                         }
                     ]
                 }
