@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "id": "${{TEAMS_APP_ID}}",
     "developer": {
-        "name": "My App, Inc.",
+        "name": "MV Dataworks",
         "websiteUrl": "https://www.example.com",
         "privacyUrl": "https://www.example.com/privacy",
         "termsOfUseUrl": "https://www.example.com/termofuse"
@@ -15,11 +15,11 @@
     },
     "name": {
         "short": "ReportMind${{APP_NAME_SUFFIX}}",
-        "full": "full name for ReportMind"
+        "full": "ReportMind - Insurance Reporting Agent"
     },
     "description": {
-        "short": "short description for ReportMind",
-        "full": "full description for ReportMind"
+        "short": "Ask questions about your insurance reports in plain language",
+        "full": "ReportMind ingests Excel insurance reports, indexes them into a vector knowledge base, and lets you ask questions in natural language. Get accurate, grounded answers and on-demand charts — no SQL, no dashboards required."
     },
     "accentColor": "#FFFFFF",
     "copilotAgents": {
