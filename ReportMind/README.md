@@ -1,4 +1,4 @@
-# <img src="logo_report_mind.png" alt="ReportMind" height="80" style="vertical-align:middle"/> ReportMind
+<table border="0"><tr><td><img src="logo_report_mind.png" height="80"/></td><td><h1>ReportMind</h1></td></tr></table>
 
 > 🏆 **Microsoft Agents League — Enterprise Agents Track Submission**
 > Built by team **MV Dataworks** for the [Enterprise Agents competition](https://github.com/microsoft/agentsleague/tree/main/starter-kits/3-enterprise-agents)
