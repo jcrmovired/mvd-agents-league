@@ -43,6 +43,12 @@ Meet **ReportMind** — the AI agent that doesn’t ruin your Fridays 🎉.
 
 Ask *"What was the loss ratio for the automotive business unit in Q3?"* and ReportMind will find the answer in your real data, explain it, and visualize it 📈 — all in a single conversation turn.
 
+## 🎥 Demo Video
+
+[![ReportMind Demo](https://img.youtube.com/vi/ZjXh1TUnp78/maxresdefault.jpg)](https://youtu.be/ZjXh1TUnp78)
+
+**[Watch the full demo on YouTube →](https://youtu.be/ZjXh1TUnp78)**
+
 ---
 
 ## Inspiration
@@ -67,7 +73,7 @@ This project was built for the **Enterprise Agents** track using the **M365 Agen
 | Deployable to Microsoft 365 / Teams | ✅ Azure Bot Service + Azure App Service via Bicep infra (`infra/`) |
 | Includes a README | ✅ This file |
 | Public repository | ✅ |
-| Demo video | ✅ See below |
+| Demo video | ✅ [Watch on YouTube](https://youtu.be/ZjXh1TUnp78) |
 
 ### Judging rubric alignment
 
