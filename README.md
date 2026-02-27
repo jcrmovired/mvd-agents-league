@@ -258,7 +258,7 @@ ReportMind/
 
 | Name | Role | Github |
 |---|---|---|
-| Johanna Capote Robayna | AI & BI Manager | @jcrmovired |
-| Nathaniel Capote Robayna | AI Engineer | @nathaniel-mv |
-| Loreto Lopez Peralta | Data Analytics | @LoretoMovired |
-| Javier Martin Luque | Software Developer | @JaviMartinLuque |
+| Johanna Capote Robayna | AI & BI Manager | [@jcrmovired](https://github.com/jcrmovired) |
+| Nathaniel Capote Robayna | AI Engineer | [@nathaniel-mv](https://github.com/jcrmovired) |
+| Loreto Lopez Peralta | Data Analytics | [@LoretoMovired](https://github.com/jcrmovired) @LoretoMovired |
+| Javier Martin Luque | Software Developer | [@JaviMartinLuque](https://github.com/jcrmovired) |
