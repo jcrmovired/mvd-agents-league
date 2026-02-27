@@ -114,6 +114,40 @@ The agent will:
 
 ---
 
+## 📸 How It Works
+
+### 1. Excel File Ingestion
+
+Upload your Excel file directly in the chat. The agent automatically processes it, splits sheets into CSV datasets, and indexes them into the knowledge base.
+
+![Excel File Ingestion](Images/Excel_file_ingestion.png)
+
+### 2. Feeding the Knowledge Base
+
+The agent confirms when your data has been successfully processed and is ready for queries.
+
+![Feeding Knowledge Base](Images/Feeding_knowledge_base.png)
+
+### 3. Chat with Your Excel Data
+
+Ask questions in plain language and get accurate, grounded answers from your actual data — no hallucinations.
+
+![Chat with Excel](Images/Chat_with_your_excel.png)
+
+### 4. On-Demand Chart Generation
+
+Request visualizations and get professional charts generated instantly from your data.
+
+![Chart Creation](Images/Chart_creation.png)
+
+### 5. Handling Complex Excel Files
+
+Even messy, multi-sheet Excel files with complex structures are processed seamlessly.
+
+![Complex Excel Example](Images/Ejemplo_excel_dificil.png)
+
+---
+
 ## 🏗️ Architecture
 
 ```
