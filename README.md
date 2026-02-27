@@ -256,9 +256,9 @@ ReportMind/
 
 **MV Dataworks** — Microsoft Agents League 2025
 
-| Name | Role |
-|---|---|
-| Johanna Capote Robayna | AI & BI Manager |
-| Nathaniel Capote Robayna | AI Engineer |
-| Loreto Lopez Peralta | Data Analytics |
-| Javier Martin Luque | Software Developer |
+| Name | Role | Github |
+|---|---|---|
+| Johanna Capote Robayna | AI & BI Manager | @jcrmovired |
+| Nathaniel Capote Robayna | AI Engineer | @nathaniel-mv |
+| Loreto Lopez Peralta | Data Analytics | @LoretoMovired |
+| Javier Martin Luque | Software Developer | @JaviMartinLuque |
