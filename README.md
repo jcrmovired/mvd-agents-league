@@ -296,6 +296,8 @@ ReportMind/
 
 **MV Dataworks** — Microsoft Agents League 2025
 
+🔗 [LinkedIn](https://www.linkedin.com/company/mv-dataworks)
+
 | Name | Role | Github |
 |---|---|---|
 | Johanna Capote Robayna | AI & BI Manager | [@jcrmovired](https://github.com/jcrmovired) |
